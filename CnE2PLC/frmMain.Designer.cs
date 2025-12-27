@@ -79,6 +79,12 @@ namespace CnE2PLC
             mnuFilter_Placeholder = new ToolStripMenuItem();
             mnuHelp = new ToolStripMenuItem();
             mnuHelp_About = new ToolStripMenuItem();
+            tsm_debug = new ToolStripMenuItem();
+            tsm_DebugLevel = new ToolStripMenuItem();
+            tsm_DebugInfo = new ToolStripMenuItem();
+            tsm_DebugWarn = new ToolStripMenuItem();
+            tsm_DebugError = new ToolStripMenuItem();
+            tsm_DebugNone = new ToolStripMenuItem();
             tsFilters = new ToolStrip();
             tslblFilters = new ToolStripLabel();
             tslblFilter_InUse = new ToolStripLabel();
@@ -86,6 +92,7 @@ namespace CnE2PLC
             tsmnuFilter_InUse_All = new ToolStripMenuItem();
             tsmnuFilter_InUse_Only = new ToolStripMenuItem();
             tsmnuFilter_InUse_Not = new ToolStripMenuItem();
+            tsm_disableDebug = new ToolStripMenuItem();
             tsContainer.BottomToolStripPanel.SuspendLayout();
             tsContainer.ContentPanel.SuspendLayout();
             tsContainer.TopToolStripPanel.SuspendLayout();
@@ -143,7 +150,7 @@ namespace CnE2PLC
             // 
             tsProgressBar.Name = "tsProgressBar";
             tsProgressBar.Size = new Size(100, 16);
-            tsProgressBar.Click += toolStripProgressBar1_Click;
+            tsProgressBar.Click += ToggleDebug;
             // 
             // tsTagCount
             // 
@@ -286,6 +293,7 @@ namespace CnE2PLC
             // 
             txtLogText.ContextMenuStrip = mnuContext_LogText;
             txtLogText.Dock = DockStyle.Fill;
+            txtLogText.Font = new Font("Consolas", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             txtLogText.Location = new Point(0, 0);
             txtLogText.Margin = new Padding(2);
             txtLogText.Name = "txtLogText";
@@ -319,7 +327,7 @@ namespace CnE2PLC
             mnu.AllowMerge = false;
             mnu.Dock = DockStyle.None;
             mnu.ImageScalingSize = new Size(24, 24);
-            mnu.Items.AddRange(new ToolStripItem[] { mnuFile, mnuPLC, mnuOutput, mnuFilter, mnuHelp });
+            mnu.Items.AddRange(new ToolStripItem[] { mnuFile, mnuPLC, mnuOutput, mnuFilter, mnuHelp, tsm_debug });
             mnu.Location = new Point(0, 0);
             mnu.Name = "mnu";
             mnu.Size = new Size(967, 24);
@@ -473,6 +481,44 @@ namespace CnE2PLC
             mnuHelp_About.Text = "About";
             mnuHelp_About.Click += About_MenuItem_Click;
             // 
+            // tsm_debug
+            // 
+            tsm_debug.DropDownItems.AddRange(new ToolStripItem[] { tsm_DebugLevel, tsm_disableDebug });
+            tsm_debug.Name = "tsm_debug";
+            tsm_debug.Size = new Size(54, 20);
+            tsm_debug.Text = "Debug";
+            // 
+            // tsm_DebugLevel
+            // 
+            tsm_DebugLevel.DropDownItems.AddRange(new ToolStripItem[] { tsm_DebugInfo, tsm_DebugWarn, tsm_DebugError, tsm_DebugNone });
+            tsm_DebugLevel.Name = "tsm_DebugLevel";
+            tsm_DebugLevel.Size = new Size(184, 22);
+            tsm_DebugLevel.Text = "Level";
+            // 
+            // tsm_DebugInfo
+            // 
+            tsm_DebugInfo.Name = "tsm_DebugInfo";
+            tsm_DebugInfo.Size = new Size(103, 22);
+            tsm_DebugInfo.Text = "Info";
+            // 
+            // tsm_DebugWarn
+            // 
+            tsm_DebugWarn.Name = "tsm_DebugWarn";
+            tsm_DebugWarn.Size = new Size(103, 22);
+            tsm_DebugWarn.Text = "Warn";
+            // 
+            // tsm_DebugError
+            // 
+            tsm_DebugError.Name = "tsm_DebugError";
+            tsm_DebugError.Size = new Size(103, 22);
+            tsm_DebugError.Text = "Error";
+            // 
+            // tsm_DebugNone
+            // 
+            tsm_DebugNone.Name = "tsm_DebugNone";
+            tsm_DebugNone.Size = new Size(103, 22);
+            tsm_DebugNone.Text = "None";
+            // 
             // tsFilters
             // 
             tsFilters.Dock = DockStyle.None;
@@ -526,6 +572,13 @@ namespace CnE2PLC
             tsmnuFilter_InUse_Not.Size = new Size(157, 22);
             tsmnuFilter_InUse_Not.Text = "Not In Use Only";
             tsmnuFilter_InUse_Not.Click += tsmnuFilter_InUse_Not_Click;
+            // 
+            // tsm_disableDebug
+            // 
+            tsm_disableDebug.Name = "tsm_disableDebug";
+            tsm_disableDebug.Size = new Size(184, 22);
+            tsm_disableDebug.Text = "Disable Debug Mode";
+            tsm_disableDebug.Click += ToggleDebug;
             // 
             // frmMain
             // 
@@ -654,5 +707,12 @@ namespace CnE2PLC
         private ToolStripMenuItem tsmnuFilter_InUse_All;
         private ToolStripMenuItem tsmnuFilter_InUse_Only;
         private ToolStripMenuItem tsmnuFilter_InUse_Not;
+        private ToolStripMenuItem tsm_debug;
+        private ToolStripMenuItem tsm_DebugLevel;
+        private ToolStripMenuItem tsm_DebugInfo;
+        private ToolStripMenuItem tsm_DebugWarn;
+        private ToolStripMenuItem tsm_DebugError;
+        private ToolStripMenuItem tsm_DebugNone;
+        private ToolStripMenuItem tsm_disableDebug;
     }
 }

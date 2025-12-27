@@ -5,6 +5,7 @@ using NPOI.HSSF.Util;
 using NPOI.SS.UserModel;
 using NPOI.SS.Util;
 using NPOI.XSSF.UserModel;
+using System.Data;
 
 
 namespace CnE2PLC.Reporting;
@@ -26,13 +27,14 @@ public static class CnE_Report
         try
         {
             DateTime StartTime = DateTime.Now;
+            LogHelper.DebugPrint($"CnE Report: Tag {plc.Name} Starting...");
 
             XSSFWorkbook CnE_Workbook = new XSSFWorkbook("CnE_Template.xlsx");
             CnE_Workbook.SetSheetName(0, plc.Name);
 
             ISheet CnE_Sheet = CnE_Workbook.GetSheetAt(0);
 
-            int RowOffset = 16; // first row to use.
+            int RowOffset = 15; // first row to use.
             int ColumnOffset = 18;
 
             foreach (XTO_AOI tag in plc.AllTags)
@@ -120,10 +122,12 @@ public static class CnE_Report
                 }
                 catch (Exception ex)
                 {
-                    LogHelper.DebugPrint($"CnE: Tag Exception Error: {ex.Message}\nTage Name: {tag.Name}");
+                    LogHelper.DebugPrint($"CnE Report: Tag {tag.Name} Exception: {ex.Message}");
                 }
 
             }
+
+            FixConditionalRowFormating(CnE_Sheet);
 
             // clean up for filtering.
             CnE_Sheet.RemoveRow(CnE_Sheet.GetRow(15));
@@ -136,17 +140,40 @@ public static class CnE_Report
 
             DateTime EndTime = DateTime.Now;
 
-            LogHelper.DebugPrint($"CnE Report for {plc.Name} was Generated taking {EndTime-StartTime} secs.");
+            LogHelper.DebugPrint($"CnE Report: {plc.Name} was Generated taking {(EndTime - StartTime).Milliseconds} ms.");
 
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            LogHelper.DebugPrint($"CnE: Create Report Exception: {e.Message}");
+            LogHelper.DebugPrint($"CnE Report: Create Report Exception: {ex.Message}");
+            throw new ApplicationException("CnE Report failed to failed to generate.");
+        }
+
+        void FixConditionalRowFormating(ISheet ws)
+        {
+            string row_for1 = $"$F16=\"Not In Use\"";
+
+            var CF = ws.SheetConditionalFormatting.GetConditionalFormattingAt(0);
+
+            CellRangeAddress[] regions = {
+            new CellRangeAddress(15, ws.LastRowNum, 0, 4),
+            new CellRangeAddress(15, ws.LastRowNum, 6, 9),
+            new CellRangeAddress(15, ws.LastRowNum, 11,15)
+            };
+
+            CF.SetFormattingRanges(regions);
+
+            var OldRule = CF.GetRule(0);
+            var NewRule = ws.SheetConditionalFormatting.CreateConditionalFormattingRule(row_for1);
+
+
+
+            CF.SetRule(0, NewRule);
         }
 
         static void InsertRow(ISheet ws, int offset)
         {
-            
+            ws.CreateRow(offset + 1);
             ws.CopyRow(offset, offset + 1);
         }
 
@@ -1046,9 +1073,9 @@ public static class CnE_Report
 
         string c = $"Plc Tag Description: {tag.Description}\n";
         c += $"Plc Tag Datatype: {tag.DataType}\n";
-        if (tag.DisableFB == true) c += "No Feedback.\n";
-        if (tag.Cmd_Invert == true) c += "Command Inverted.\n";
-        if (tag.FBInv == true) c += "Feedback Inverted.\n";
+        if (tag.DisableFB == true) c += "No Feedback Enabled.\n";
+        if (tag.Cmd_Invert == true) c += "Command is Inverted.\n";
+        if (tag.FBInv == true) c += "Feedback is Inverted.\n";
 
         ISheet s = WB.GetSheetAt(0);
         IRow row = s.GetRow(1);
@@ -1058,7 +1085,7 @@ public static class CnE_Report
         row.GetCell(col).SetCellValue(tag.InUse == true ? "Yes" : "No");
 
         row = s.GetRow(13);
-        row.GetCell(col).SetCellValue(tag.Name);
+        row.GetCell(col).SetCellValue($"{tag.Name}.Out");
 
         ICellStyle style = row.GetCell(col).CellStyle;
         IFont font = style.GetFont(WB);

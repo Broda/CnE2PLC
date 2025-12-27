@@ -13,15 +13,29 @@ public static class IO_Report
     {
         try
         {
+            DateTime StartTime = DateTime.Now;
             XSSFWorkbook IO_Workbook = new XSSFWorkbook();
 
+            // create individual sheets for each IO Data Type.
             CreateAiReport(IO_Workbook, plc);
             CreateAoReport(IO_Workbook, plc);
             CreateDiReport(IO_Workbook, plc);
             CreateDoReport(IO_Workbook, plc);
 
+
+            // auto size columns on all sheets
+            for (int s = 0; s < IO_Workbook.NumberOfSheets; s++)
+            {
+                ISheet sh = IO_Workbook.GetSheetAt(s);
+                int numCols = sh.GetRow(0).LastCellNum;
+                for (int i = 0; i < numCols; i++) sh.AutoSizeColumn(i);
+            }
+
             IO_Workbook.Write(File);
 
+            DateTime EndTime = DateTime.Now;
+
+            LogHelper.DebugPrint($"CnE Report for {plc.Name} was Generated taking {(EndTime - StartTime).Milliseconds} ms.");
         }
         catch (Exception ex)
         {
@@ -50,6 +64,7 @@ public static class IO_Report
                 row = Sheet.CreateRow(RowOffset++);
                 ToDataRow((AIData)tag, row);
             }
+
         }
         catch (Exception ex)
         {

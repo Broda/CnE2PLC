@@ -94,5 +94,17 @@ namespace CnE2PLC.Properties {
                 this["WindowMaximizedState"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int DebugLevel {
+            get {
+                return ((int)(this["DebugLevel"]));
+            }
+            set {
+                this["DebugLevel"] = value;
+            }
+        }
     }
 }

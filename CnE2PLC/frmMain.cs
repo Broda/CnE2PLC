@@ -25,13 +25,44 @@ public partial class frmMain : Form
     {
 
         InitializeComponent();
+        Program.DebugLevel = Properties.Settings.Default.DebugLevel;
+        tsm_debug.Visible = Settings.Default.Debug;
+
+        switch (Program.DebugLevel)
+        {
+            case 0:
+                tsm_DebugNone.Checked = true;
+                break;
+
+            case 1:
+                tsm_DebugError.Checked = true;
+                break;
+
+            case 2:
+                tsm_DebugWarn.Checked = true;
+                break;
+
+            case 3:
+                tsm_DebugInfo.Checked = true;
+                break;
+
+            default:
+                break;
+        }
+
+        Program.UITraceListener.TraceOutput += OnTraceOutputReceived;
+        LogHelper.DebugPrint("Starting up...");
+
+        this.StartPosition = FormStartPosition.Manual;
+        this.Location = new Point(100, 100);
+        this.Size = new Size(800, 600);
+        this.WindowState = FormWindowState.Normal;
+
         dgvTags.CellFormatting += new DataGridViewCellFormattingEventHandler(TagsDataView_CellFormatting);
         dgvTags.CellToolTipTextNeeded += new DataGridViewCellToolTipTextNeededEventHandler(TagsDataView_CellToolTipTextNeeded);
 
         dgvTags.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-        Program.UITraceListener.TraceOutput += OnTraceOutputReceived;
 
-        LogHelper.DebugPrint("Starting up...");
 
         if (Settings.Default.WindowPos != Point.Empty)
         {
@@ -42,16 +73,7 @@ public partial class frmMain : Form
 
         if (Settings.Default.WindowMaximizedState) this.WindowState = FormWindowState.Maximized;
 
-        if (Settings.Default.Debug)
-        {
-            status.BackColor = Color.Yellow;
-            splitContainer.Panel2Collapsed = false;
-        }
-        else
-        {
-            status.BackColor = Control.DefaultBackColor;
-            splitContainer.Panel2Collapsed = true;
-        }
+        splitContainer.Panel2Collapsed = !Settings.Default.Debug;
 
     }
 
@@ -63,9 +85,48 @@ public partial class frmMain : Form
         }
         else
         {
-            txtLogText.AppendText(message);
+            if (message.Contains("ERROR:"))
+            {
+                if (Program.DebugLevel > 0) AppendColoredText(txtLogText, message, Color.Red);
+            }
+            else if (message.Contains("WARNING:"))
+            {
+                if (Program.DebugLevel > 1) AppendColoredText(txtLogText, message, Color.Orange);
+            }
+            else if (message.Contains("INFO:"))
+            {
+                if (Program.DebugLevel > 2) AppendColoredText(txtLogText, message, Color.Blue);
+            }
+            else
+            {
+                AppendColoredText(txtLogText, message, Color.Black);
+            }
+
             txtLogText.ScrollToCaret();
         }
+
+        [DebuggerStepThrough]
+        void AppendColoredText(RichTextBox box, string text, Color color)
+        {
+            // Set the selection point to the end of the existing text
+            box.SelectionStart = box.TextLength;
+            // Set selection length to 0 to apply color to the insertion point
+            box.SelectionLength = 0;
+
+            // Set the desired color for the new text
+            box.SelectionColor = color;
+            // Append the text and a new line character
+            box.AppendText(text);
+
+            // Optional: Reset the color to the default ForeColor for subsequent input
+            box.SelectionColor = box.ForeColor;
+        }
+
+
+
+
+
+
     }
 
     bool isPointVisibleOnAScreen(Point p)
@@ -209,20 +270,11 @@ public partial class frmMain : Form
         }
     }
 
-    private void toolStripProgressBar1_Click(object sender, EventArgs e)
+    private void ToggleDebug(object sender, EventArgs e)
     {
         Settings.Default.Debug = !Settings.Default.Debug;
-
-        if (Settings.Default.Debug)
-        {
-            status.BackColor = Color.Yellow;
-            splitContainer.Panel2Collapsed = false;
-        }
-        else
-        {
-            status.BackColor = Control.DefaultBackColor;
-            splitContainer.Panel2Collapsed = true;
-        }
+        splitContainer.Panel2Collapsed = !Settings.Default.Debug;
+        tsm_debug.Visible = Settings.Default.Debug;
     }
 
     private void copyToolStripMenuItem_Click(object sender, EventArgs e)
@@ -250,6 +302,7 @@ public partial class frmMain : Form
         Settings.Default.WindowPos = this.Location;
         Settings.Default.WindowSize = this.Size;
         Settings.Default.WindowMaximizedState = this.WindowState == FormWindowState.Maximized;
+        Settings.Default.DebugLevel = Program.DebugLevel;
         Settings.Default.Save();
 
     }
@@ -284,12 +337,10 @@ public partial class frmMain : Form
         };
 
         if (saveFileDialog1.ShowDialog() == DialogResult.OK)
-        {
+        { 
             try
             {
                 Stream myStream = saveFileDialog1.OpenFile();
-                if (myStream == null) return;
-
                 CnE_Report.CreateReport(PLC, myStream);
                 myStream.Close();
 
@@ -302,7 +353,7 @@ public partial class frmMain : Form
 
             catch (Exception ex)
             {
-                LogHelper.DebugPrint($"Error creating C&E Report: {ex.Message}");
+                LogHelper.DebugPrint($"ERROR: Error creating C&E Report: {ex.Message}");
                 MessageBox.Show($"Error creating C&E Report: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -339,7 +390,7 @@ public partial class frmMain : Form
             }
             catch (Exception ex)
             {
-                LogHelper.DebugPrint($"Error creating IO Report: {ex.Message}");
+                LogHelper.DebugPrint($"ERROR: Error creating IO Report: {ex.Message}");
                 MessageBox.Show($"Error creating IO Report: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -380,7 +431,9 @@ public partial class frmMain : Form
             }
             catch (Exception ex)
             {
-                var r = MessageBox.Show($"Error: {ex.Message}", "Import L5X Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                string s = $"Error: Import L5X Error: {ex.Message}";
+                LogHelper.DebugPrint(s);
+                MessageBox.Show(s, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
 
 
@@ -502,5 +555,58 @@ public partial class frmMain : Form
         tsmnuFilter_InUse_Only.Checked = false;
         tsmnuFilter_InUse_Not.Checked = true;
     }
+
+    /// <summary>
+    /// Handles the Click event for debug level menu items, updating the application's debug level and menu item states
+    /// accordingly.
+    /// </summary>
+    /// <remarks>This method updates the application's debug level based on which debug menu item is selected.
+    /// Only one debug level can be active at a time; selecting a new level will update the checked state of all related
+    /// menu items to reflect the current selection.</remarks>
+    /// <param name="sender">The menu item that was clicked. Expected to be a ToolStripMenuItem representing a debug level option.</param>
+    /// <param name="e">An EventArgs object that contains the event data.</param>
+    /// <exception cref="NotImplementedException">Thrown if the clicked menu item's Name does not correspond to a recognized debug level option.</exception>
+    private void tsm_DebugChange_Click(object sender, EventArgs e)
+    {
+        switch (((ToolStripMenuItem)sender).Name)
+        {
+            case "tsm_DebugInfo":
+                Program.DebugLevel = 3;
+                tsm_DebugError.Checked = false;
+                tsm_DebugWarn.Checked = false;
+                tsm_DebugInfo.Checked = true;
+                tsm_DebugNone.Checked = false;
+                break;
+
+            case "tsm_DebugWarn":
+                Program.DebugLevel = 2;
+                tsm_DebugError.Checked = false;
+                tsm_DebugWarn.Checked = true;
+                tsm_DebugInfo.Checked = false;
+                tsm_DebugNone.Checked = false;
+                break;
+
+            case "tsm_DebugError":
+                Program.DebugLevel = 1;
+                tsm_DebugError.Checked = true;
+                tsm_DebugWarn.Checked = false;
+                tsm_DebugInfo.Checked = false;
+                tsm_DebugNone.Checked = false;
+                break;
+
+            case "tsm_DebugNone":
+                Program.DebugLevel = 0;
+                tsm_DebugError.Checked = false;
+                tsm_DebugWarn.Checked = false;
+                tsm_DebugInfo.Checked = false;
+                tsm_DebugNone.Checked = true;
+                break;
+
+            default:
+                throw new NotImplementedException($"{((ToolStripMenuItem)sender).Name} is not handled.");
+        }
+    }
+
+
 }
 

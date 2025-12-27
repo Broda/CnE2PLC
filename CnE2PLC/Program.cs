@@ -5,6 +5,27 @@ namespace CnE2PLC;
 
 internal static class Program
 {
+    public static int DebugLevel
+    {
+        get
+        {
+            return field;
+        }
+        set
+        {
+            string[] LevelName = { "None", "Error", "Warning", "Info" };
+
+            if (value < 0 | value > 3)
+            {
+                LogHelper.DebugPrint($"ERROR: Changing Debug Level to {value} is not supported.");
+                return;
+            }
+            field = value;
+            LogHelper.DebugPrint($"Changing Debug Level to {LevelName[value]}.");
+        }
+
+    }
+
     public static UiTraceListener UITraceListener = new();
 
     /// <summary>
